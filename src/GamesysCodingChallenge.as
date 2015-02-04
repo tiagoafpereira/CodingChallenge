@@ -3,7 +3,7 @@ package
 	import starling.core.Starling;
 	import flash.display.Sprite;
 	
-	[SWF(width="800", height="800", frameRate="60", backgroundColor="#000000")]
+	[SWF(width="605", height="600", frameRate="60", backgroundColor="#FFFFFF", verticalAlign="middle")]
 	public class GamesysCodingChallenge extends Sprite
 	{
 		private var mStarling:Starling;

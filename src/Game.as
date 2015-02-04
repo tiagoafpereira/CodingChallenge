@@ -1,11 +1,14 @@
 package
 {
+	import flash.events.TimerEvent;
 	import flash.geom.Rectangle;
 	import flash.media.Sound;
 	import flash.net.URLRequest;
 	import flash.utils.Dictionary;
+	import flash.utils.Timer;
 	
 	import starling.display.Button;
+	import starling.display.Image;
 	import starling.display.Sprite;
 	import starling.events.Event;
 	import starling.events.Touch;
@@ -14,6 +17,7 @@ package
 	import starling.text.TextField;
 	import starling.textures.Texture;
 	import starling.textures.TextureAtlas;
+	import starling.utils.Color;
 	import starling.utils.HAlign;
 	import starling.utils.VAlign;
 	
@@ -29,13 +33,29 @@ package
 		[Embed(source = "/assets/images/plus.png")]
 		private static const PlusTexture:Class;			
 		private var increaseBetButton:Button = new Button(Texture.fromEmbeddedAsset(PlusTexture));		
+
+		[Embed(source = "/assets/images/tiki.jpg")]
+		private static const MonkeyTexture:Class;			
+		private var monkeyImage:Image = new Image(Texture.fromEmbeddedAsset(MonkeyTexture));		
+		
+		[Embed(source = "/assets/images/betButton.png")]
+		private static const BetButtonTexture:Class;			
+		private var betLabel:Image = new Image(Texture.fromEmbeddedAsset(BetButtonTexture));			
+
+		[Embed(source = "/assets/images/win.png")]
+		private static const WinTexture:Class;			
+		private var winLabel:Image = new Image(Texture.fromEmbeddedAsset(WinTexture));		
+		
+		[Embed(source = "/assets/images/background.png")]
+		private static const BackgroundTex:Class;			
+		private var backgroundImage:Image = new Image(Texture.fromEmbeddedAsset(BackgroundTex));		
 		
 		// Embed the Atlas XML
-		[Embed(source="/assets/images/stackEmAtlas.xml", mimeType="application/octet-stream")]
+		[Embed(source="/assets/images/monkey.xml", mimeType="application/octet-stream")]
 		public static const AtlasXml:Class;
 		
 		// Embed the Atlas Texture:
-		[Embed(source="/assets/images/stackEmSpriteSheet.png")]
+		[Embed(source="/assets/images/monkeySpriteSheet.png")]
 		public static const AtlasTexture:Class;		
 		
 		// create atlas
@@ -45,10 +65,11 @@ package
 		
 		[Embed(source="/assets/sounds/coinDrop.mp3")]
 		private var CoinDropSound:Class;
-		private var _coindDropSound:Sound = new CoinDropSound(); 
+		private var _coinDropSound:Sound = new CoinDropSound(); 
 		
 		//tiles dict
 		private var _tilesDict:Dictionary = new Dictionary(true);
+		private var _validTiles:Array = new Array();
 		
 		//play result
 		private var _playResult:Array = new Array();
@@ -62,6 +83,7 @@ package
 		private var _winMoney:Number = 0;
 		private var _currentSpinProfit:Number = 0;
 		private var _finishedTilesCount:Number = 0;
+		private var _betMultiplier:Number = 0;
 		
 		private var startingMoneyTextField:TextField;
 		private var betTextField:TextField;
@@ -69,16 +91,22 @@ package
 		
 		private const SIZE:Number = 6;
 		private const TILE_SIZE:Number = 50;
-		private const TILES_X:Number = 10;
-		private const TILES_Y:Number = 50;
+		private const TILES_X:Number = 100;
+		private const TILES_Y:Number = 175;
+		
+		private const TEST_MODE:Boolean = false;
+		private const MAX_STOP_DELAY:Number = 1000;
+		private var _waitTestTimer:Timer = new Timer(500, 1);
 		
 		public function Game()
 		{
 			
+			addChild(backgroundImage);
+			
 			//TILES
 			for(var row:Number = 0; row < SIZE; row++){
 				for(var col:Number = 0; col < SIZE; col++){
-					var tile:Tile = new Tile(_atlas, row+"-"+col);
+					var tile:Tile = new Tile(_atlas, row+"-"+col, MAX_STOP_DELAY);
 					tile.width = TILE_SIZE;
 					tile.height = TILE_SIZE;
 					tile.x = col*tile.width+TILES_X;
@@ -89,51 +117,62 @@ package
 				}
 			}
 			
-			//SPIN BUTTON
-			startButton.addEventListener(TouchEvent.TOUCH, handleTouchEvent);
-			startButton.width = 50;
-			startButton.height = 50;
-			startButton.x = this.width+20;
-			startButton.y = this.height+20;
-			addChild(startButton);
-			
 			//TEXT
-			startingMoneyTextField = new TextField(200, 30, "Deposit: "+_startingMoney, "Verdana", 15, 0xFFFFFF);
+			startingMoneyTextField = new TextField(200, 30, _startingMoney.toString(), "Verdana", 12, 0xFF9900);
 			startingMoneyTextField.hAlign = HAlign.LEFT;
 			startingMoneyTextField.vAlign = VAlign.CENTER;
-			startingMoneyTextField.border = true;
-			startingMoneyTextField.x = 0;
-			startingMoneyTextField.y = 10;
+			startingMoneyTextField.x = 10;
+			startingMoneyTextField.y = TILES_Y+SIZE*TILE_SIZE+5;
 			addChild(startingMoneyTextField);
 			
-			betTextField = new TextField(200, 30, "Bet: "+_currentBet, "Verdana", 12, 0xFFFFFF);
+			betTextField = new TextField(50, 30, _currentBet.toString(), "Verdana", 20, 0xFF9900);
 			betTextField.hAlign = HAlign.LEFT;
 			betTextField.vAlign = VAlign.CENTER;
-			betTextField.border = true;
-			betTextField.x = 0;
-			betTextField.y = SIZE*TILE_SIZE+50;
-			addChild(betTextField);				
+			betTextField.x = TILES_X-10;
+			betTextField.y = TILES_Y+SIZE*TILE_SIZE+45;
+			addChild(betTextField);
 
-			winTextField = new TextField(200, 30, "Win: "+_winMoney, "Verdana", 12, 0xFFFFFF);
-			winTextField.hAlign = HAlign.LEFT;
-			winTextField.vAlign = VAlign.CENTER;
-			winTextField.border = true;
-			winTextField.x = betTextField.x+betTextField.width;
-			winTextField.y = SIZE*TILE_SIZE+50;
-			addChild(winTextField);
+			betLabel.x = betTextField.x-betLabel.width-2;
+			betLabel.y = betTextField.y-(Math.abs(betTextField.height-betLabel.height)/2);
+			addChild(betLabel);
 
 			//INCREASE BET BUTTON
 			increaseBetButton.addEventListener(TouchEvent.TOUCH, handleTouchEvent);
-			increaseBetButton.width = 20;
-			increaseBetButton.height = 20;
-			increaseBetButton.x = betTextField.x+betTextField.width-increaseBetButton.width-5;
+			increaseBetButton.x = betTextField.x+betTextField.width+5;
 			increaseBetButton.y = betTextField.y+(betTextField.height-increaseBetButton.height)/2;
-			addChild(increaseBetButton);			
+			addChild(increaseBetButton);
+			
+			winTextField = new TextField(120, 30, _winMoney.toString(), "Verdana", 20, 0xFF9900);
+			winTextField.hAlign = HAlign.LEFT;
+			winTextField.vAlign = VAlign.CENTER;
+			winTextField.x = betTextField.x+betTextField.width+200;
+			winTextField.y = TILES_Y+SIZE*TILE_SIZE+45;
+			addChild(winTextField);
+
+			winLabel.x = winTextField.x-winLabel.width-2;
+			winLabel.y = winTextField.y-(Math.abs(winTextField.height-winLabel.height)/2);
+			addChild(winLabel);	
+
+			//SPIN BUTTON
+			startButton.addEventListener(TouchEvent.TOUCH, handleTouchEvent);
+			startButton.x = winTextField.x+winTextField.width-50;
+			startButton.y = winTextField.y-winTextField.height/2;
+			addChild(startButton);			
+			
+			//ORIGINAL IMAGE
+			monkeyImage.x = TILES_X;
+			monkeyImage.y = TILES_Y;
+			monkeyImage.width = SIZE*TILE_SIZE;
+			monkeyImage.height = SIZE*TILE_SIZE;
+			addChild(monkeyImage);
+			
+			//TESTS
+			_waitTestTimer.addEventListener(TimerEvent.TIMER_COMPLETE, handleWaitTestTimerEvent);
 			
 		}
 		
 		private function onSoundLoaded(event:Event):void{
-			_coindDropSound = event.target as Sound;
+			_coinDropSound = event.target as Sound;
 		}
 		
 		private function handleTouchEvent(event:TouchEvent):void{
@@ -162,19 +201,25 @@ package
 		
 		private function spin():void{
 			
+			//goodbye monkey
+			monkeyImage.alpha = 0;
+			
 			//reset counters
 			_finishedTilesCount = 0;
 			
 			//prepare play
 			var validSection:Rectangle = generatePlay();				
 			
+			_currentSpinProfit = 0;
+			
 			if(validSection.width*validSection.height == 0){
 				_startingMoney -= _currentBet;
-				_currentSpinProfit = 0;
+				winTextField.text = _currentSpinProfit.toString();
+
 			}else{
-				_currentSpinProfit = Math.floor((validSection.width/TILE_SIZE))*Math.floor((validSection.height/SIZE))*_currentBet;
-				_winMoney += _currentSpinProfit;
-				_startingMoney += _currentSpinProfit;					
+				//_currentSpinProfit = validSection.width*validSection.height*(_currentBet+(_betMultiplier-1));
+				//_winMoney += _currentSpinProfit;
+				//_startingMoney += _currentSpinProfit;					
 			}
 			
 			for each(var tile:Tile in _tilesDict){
@@ -185,17 +230,54 @@ package
 		
 		private function handleFinishedTileEvent(event:Event):void{
 			
+			var _matchColor:uint;
+			
 			_finishedTilesCount++;
 			
-			if(event.data[1] == true)
-				_coindDropSound.play();
+			if(event.data[1] == true){
+				
+				_coinDropSound.play();
+				
+				_validTiles.push(event.target);
+				
+				_currentSpinProfit += _currentBet;
+				_winMoney += _currentSpinProfit;
+				_startingMoney += _currentSpinProfit;					
+				
+			}
+			
+			winTextField.text 			= _currentSpinProfit.toString();
+			startingMoneyTextField.text = _startingMoney.toString();			
 			
 			if(_finishedTilesCount == SIZE*SIZE){
-				startButton.enabled = true;
-				winTextField.text 			= "Win: "+_currentSpinProfit.toString();
-				startingMoneyTextField.text = "Deposit: "+_startingMoney.toString();				
-			}			
+				
+				//got all the tiles!
+				if(_betMultiplier > 1)
+					_currentSpinProfit *= _betMultiplier;		
+
+				winTextField.text 			= _currentSpinProfit.toString();
+				startingMoneyTextField.text = _startingMoney.toString();				
+				
+				//show the multiplier color
+				for each(var tile:Tile in _validTiles){
+					tile.betMultiplier = _betMultiplier;
+				}
+				
+				startButton.enabled 		= true;
+				
+				trace("DONE: "+new Date().toString());
+				
+				_validTiles = new Array();
+				
+				if(TEST_MODE)
+					_waitTestTimer.start();
+				
+			}	
 			
+		}
+		
+		private function handleWaitTestTimerEvent(event:TimerEvent):void{
+			spin();
 		}
 		
 		private function increaseBet():void{
@@ -207,13 +289,19 @@ package
 			
 			_currentBet = _allowedBets[_currentBetIndex];
 			
-			betTextField.text = "Bet: "+_currentBet;
+			betTextField.text = _currentBet.toString();
 			
 		}
 		
 		private function generatePlay():Rectangle{
 			
-			var validSection:Rectangle = new Rectangle(0,0,0,0);
+			var validSection:Rectangle 	= new Rectangle(0,0,0,0);
+			var randRow:Number 			= 0;
+			var randCol:Number 			= 0;
+			var randWidth:Number 		= 0;
+			var randHeight:Number 		= 0;
+			
+			_betMultiplier 				= 0;
 			
 			//zeroes
 			for(var row:Number = 0; row < SIZE; row++){
@@ -224,46 +312,76 @@ package
 			}
 			
 			//LUCKY TIME!
-			if(Math.random() > 0.75){
+			if(Math.random() > 0.85){
+				
+				if(Math.random() > 0.75){
+					
+					//MAKE A LINE
+					randRow 		= Math.floor(Math.random()*SIZE);
+					randCol			= 0;
+					randWidth		= SIZE;
+					randHeight		= 1;
+					_betMultiplier 	= 2;
+					
+				}else if(Math.random() > 0.85){
+					
+					//MAKE A COLUMN
+					randRow 		= 0;
+					randCol			= Math.floor(Math.random()*SIZE);
+					randWidth		= 1;
+					randHeight		= SIZE;
+					_betMultiplier 	= 3;					
+				
+				}else if(Math.random() > 0.95){
 
-				var randRow:Number 		= Math.floor(Math.random()*(SIZE-2));
-				var randCol:Number 		= Math.floor(Math.random()*(SIZE-2));
-				var randWidth:Number 	= Math.floor(Math.random()*(SIZE-randCol));
-				var randHeight:Number 	= Math.floor(Math.random()*(SIZE-randRow));
-				
-				if(randWidth < 2)
-					randWidth = 2;
-				
-				if(randHeight < 2)
-					randHeight = 2;
-				
-				trace("randRow "+randRow);
-				trace("randCol "+randCol);
-				trace("randWidth "+randWidth);
-				trace("randHeight "+randHeight);
+					//ALL!
+					randRow 		= 0;
+					randCol			= 0;
+					randWidth		= SIZE;
+					randHeight		= SIZE;
+					_betMultiplier 	= 4;						
+					
+				}else{
+					
+					//RANDOM RECT
+					randRow 		= Math.floor(Math.random()*((SIZE-1)-2));
+					randCol 		= Math.floor(Math.random()*((SIZE-1)-2));
+					randWidth 		= Math.floor(Math.random()*((SIZE-1)-randCol));
+					randHeight 		= Math.floor(Math.random()*((SIZE-1)-randRow));
+					
+					if(randWidth < 2)
+						randWidth = 2;
+					
+					if(randHeight < 2)
+						randHeight = 2;					
+					
+					_betMultiplier = 1;
+				}
 				
 				validSection.x = randRow;
 				validSection.y = randCol;
-				validSection.width = randWidth*TILE_SIZE;
-				validSection.height = randHeight*TILE_SIZE;
+				validSection.width = randWidth;
+				validSection.height = randHeight;
 				
 				for(row = randRow; row < SIZE; row++){
-					if(row <= randRow+randHeight){
+					if(row <= randRow+(randHeight-1)){
 						for(col = randCol; col < SIZE; col++){
-							if(col <= randCol+randWidth){
-								_playResult[row][col] = 1;
+							if(col <= randCol+(randWidth-1)){
+								_playResult[row][col] = _betMultiplier;
 							}
 						}
 					}
 				}
-			
 			}
 				
 			trace(_playResult);
 
 			for(row = 0; row < SIZE; row++){
 				for(col = 0; col < SIZE; col++){
-					(_tilesDict[row+"-"+col] as Tile).isValid = _playResult[row][col] == 1;
+					//(_tilesDict[row+"-"+col] as Tile).betMultiplier = _playResult[row][col];
+					(_tilesDict[row+"-"+col] as Tile).clear();
+					(_tilesDict[row+"-"+col] as Tile).isValid 	= _playResult[row][col] > 0;
+					(_tilesDict[row+"-"+col] as Tile).betValue 	= _currentBet;
 				}
 			}			
 			
