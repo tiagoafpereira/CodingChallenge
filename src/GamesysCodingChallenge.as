@@ -10,7 +10,6 @@ package
 		
 		public function GamesysCodingChallenge()
 		{
-			// Create a Starling instance that will run the "Game" class
 			mStarling = new Starling(Game, stage);
 			mStarling.start();
 		}

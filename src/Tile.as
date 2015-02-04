@@ -26,16 +26,16 @@ package
 		private var _movie:MovieClip;
 		private var _movieTween:Tween;
 		
-		private var _name:String = "";
-		private var _running:Boolean = false;
-		private var _stopTimer:Timer = new Timer(_stopDelay);
+		private var _name:String 			= "";
+		private var _running:Boolean 		= false;
+		private var _stopTimer:Timer 		= new Timer(_stopDelay);
 		private var _validFrameNumber:Number;
-		private var _betMultiplier:Number = 1;
-		private var _isValid:Boolean = false;
-		private var _betValue:Number = 0;
-		private var _matchColor:uint = Color.RED;
+		private var _betMultiplier:Number 	= 1;
+		private var _isValid:Boolean 		= false;
+		private var _betValue:Number 		= 0;
+		private var _matchColor:uint 		= Color.RED;
 		
-		private var _stopDelay:Number = 2000;
+		private var _stopDelay:Number 		= 2000;
 		
 		public static const FINISHED:String = "finishedEvent";
 		
@@ -49,17 +49,14 @@ package
 				
 			addEventListener(Event.ADDED_TO_STAGE, init);
 			
-			this.pivotX = this.width/2;
-			this.pivotY = this.height/2;
-			
 			resetTween();
 			
-			_textureAtlas = textureAtlas;
-			_name = name;
-			_validFrameNumber = Number(_name.split("-")[0])*6+Number(_name.split("-")[1]);
-			_stopDelay = stopDelay
+			_textureAtlas 		= textureAtlas;
+			_name 				= name;
+			_validFrameNumber 	= Number(_name.split("-")[0])*6+Number(_name.split("-")[1]);
+			_stopDelay 			= stopDelay
 			
-			_movie = new MovieClip(textureAtlas.getTextures());
+			_movie 				= new MovieClip(textureAtlas.getTextures());
 			addChild(_movie);
 			
 			Starling.juggler.add(_movie);
@@ -69,16 +66,7 @@ package
 			
 			_stopTimer.addEventListener(TimerEvent.TIMER, handleStopTimerEvent);
 			
-			//overlay sprite
-/*			_overlay = new Image(Texture.fromEmbeddedAsset(CoinTex));
-			_overlay.width = this.width/2;
-			_overlay.height = this.height/2;
-			_overlay.x = this.width/2-_overlay.width/2;
-			_overlay.y = this.height/2-_overlay.height/2;
-			_overlay.alpha = 0;
-			addChild(_overlay);*/
-			
-			//bet value
+			//bet value label
 			_betValueTextField.x = this.width/2-_betValueTextField.width/2;
 			_betValueTextField.y = this.height/2-_betValueTextField.height/2;
 			_betValueTextField.alpha = 0;
@@ -96,12 +84,12 @@ package
 		
 		public function start():void{
 			resetTween();
-			_running = true;
-			_betValueTextField.alpha = 0;
-			_betValueTextField.text = "+"+getValue();
-			_betMultiplier = 1;
-			_matchColor = Color.RED;
-			_stopTimer.delay = Math.floor(Math.random()*_stopDelay);
+			_running				 	= true;
+			_betValueTextField.alpha 	= 0;
+			_betValueTextField.text 	= "+"+getValue();
+			_betMultiplier 				= 1;
+			_matchColor 				= Color.RED;
+			_stopTimer.delay			= Math.floor(Math.random()*_stopDelay);
 			_stopTimer.start();
 		}
 		
@@ -155,13 +143,13 @@ package
 			return _betMultiplier;
 		}
 		
-		public function get isValid():Boolean{
-			return _isValid;
-		}
-
 		public function set isValid(value:Boolean):void{
 			_isValid = value;
-		}		
+		}			
+		
+		public function get isValid():Boolean{
+			return _isValid;
+		}	
 		
 		private function getValue():String{
 			return (_betValue*_betMultiplier).toString();
@@ -174,10 +162,10 @@ package
 		}
 		
 		private function resetTween():void{
-			_tween = new Tween(_betValueTextField, 0.5, Transitions.EASE_OUT);
-			_tween.repeatCount = 1;
-			_tween.reverse = false;
-			_tween.onComplete = handleTweenOnComplete;			
+			_tween 				= new Tween(_betValueTextField, 0.5, Transitions.EASE_OUT);
+			_tween.repeatCount 	= 1;
+			_tween.reverse 		= false;
+			_tween.onComplete 	= handleTweenOnComplete;			
 			Starling.juggler.add(_tween);
 		}
 
