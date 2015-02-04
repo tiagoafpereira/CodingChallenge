@@ -1,10 +1,13 @@
 package
 {
 	import flash.geom.Rectangle;
+	import flash.media.Sound;
+	import flash.net.URLRequest;
 	import flash.utils.Dictionary;
 	
 	import starling.display.Button;
 	import starling.display.Sprite;
+	import starling.events.Event;
 	import starling.events.Touch;
 	import starling.events.TouchEvent;
 	import starling.events.TouchPhase;
@@ -18,8 +21,14 @@ package
 	{
 
 		[Embed(source = "/assets/images/startButtonUp.png")]
-		private static const startButtonUp:Class;			
-		private var startButton:Button = new Button(Texture.fromEmbeddedAsset(startButtonUp));
+		private static const StartButtonUpTex:Class;
+		[Embed(source = "/assets/images/startButtonDisabled.png")]
+		private static const StartButtonDisabledTex:Class;		
+		private var startButton:Button = new Button(Texture.fromEmbeddedAsset(StartButtonUpTex), "", null, null, Texture.fromEmbeddedAsset(StartButtonDisabledTex));
+
+		[Embed(source = "/assets/images/plus.png")]
+		private static const PlusTexture:Class;			
+		private var increaseBetButton:Button = new Button(Texture.fromEmbeddedAsset(PlusTexture));		
 		
 		// Embed the Atlas XML
 		[Embed(source="/assets/images/stackEmAtlas.xml", mimeType="application/octet-stream")]
@@ -34,6 +43,10 @@ package
 		private var _xml:XML = XML(new AtlasXml());
 		private var _atlas:TextureAtlas = new TextureAtlas(_texture, _xml);		
 		
+		[Embed(source="/assets/sounds/coinDrop.mp3")]
+		private var CoinDropSound:Class;
+		private var _coindDropSound:Sound = new CoinDropSound(); 
+		
 		//tiles dict
 		private var _tilesDict:Dictionary = new Dictionary(true);
 		
@@ -42,9 +55,13 @@ package
 		private var _validSectionOverlay:Sprite = new Sprite();
 		
 		//numbers
+		private var _allowedBets:Array = [1, 2, 5, 10, 50, 100];
+		private var _currentBetIndex:Number = 0;
 		private var _startingMoney:Number = 5000;
 		private var _currentBet:Number = 1;
 		private var _winMoney:Number = 0;
+		private var _currentSpinProfit:Number = 0;
+		private var _finishedTilesCount:Number = 0;
 		
 		private var startingMoneyTextField:TextField;
 		private var betTextField:TextField;
@@ -68,17 +85,18 @@ package
 					tile.y = row*tile.height+TILES_Y;
 					addChild(tile);
 					_tilesDict[tile.tileName] = tile;
+					tile.addEventListener(Tile.FINISHED, handleFinishedTileEvent);
 				}
 			}
 			
 			//SPIN BUTTON
-			startButton.addEventListener(TouchEvent.TOUCH, spin);
+			startButton.addEventListener(TouchEvent.TOUCH, handleTouchEvent);
 			startButton.width = 50;
 			startButton.height = 50;
 			startButton.x = this.width+20;
 			startButton.y = this.height+20;
 			addChild(startButton);
-		
+			
 			//TEXT
 			startingMoneyTextField = new TextField(200, 30, "Deposit: "+_startingMoney, "Verdana", 15, 0xFFFFFF);
 			startingMoneyTextField.hAlign = HAlign.LEFT;
@@ -103,32 +121,94 @@ package
 			winTextField.x = betTextField.x+betTextField.width;
 			winTextField.y = SIZE*TILE_SIZE+50;
 			addChild(winTextField);
+
+			//INCREASE BET BUTTON
+			increaseBetButton.addEventListener(TouchEvent.TOUCH, handleTouchEvent);
+			increaseBetButton.width = 20;
+			increaseBetButton.height = 20;
+			increaseBetButton.x = betTextField.x+betTextField.width-increaseBetButton.width-5;
+			increaseBetButton.y = betTextField.y+(betTextField.height-increaseBetButton.height)/2;
+			addChild(increaseBetButton);			
 			
 		}
 		
-		private function spin(event:TouchEvent):void{
+		private function onSoundLoaded(event:Event):void{
+			_coindDropSound = event.target as Sound;
+		}
+		
+		private function handleTouchEvent(event:TouchEvent):void{
 			
 			var touch:Touch = event.getTouch(this, TouchPhase.ENDED);			
 			
 			if(touch != null){
 				
-				//prepare play
-				var validSection:Rectangle = generatePlay();				
-				
-				_winMoney += Math.floor((validSection.width/TILE_SIZE))*Math.floor((validSection.height/SIZE))*_currentBet;
-				_startingMoney += _winMoney;
-				
-				if(validSection.width*validSection.height == 0){
-					_startingMoney -= _currentBet;
+				switch(event.target){
+					
+					case startButton:
+						if(startButton.enabled){
+							startButton.enabled = false;
+							spin();							
+						}
+						break;
+					
+					case increaseBetButton:
+						increaseBet();
+						break;
+					
 				}
-				
-				winTextField.text 			= _winMoney.toString();
-				startingMoneyTextField.text = _startingMoney.toString();				
-				
-				for each(var tile:Tile in _tilesDict){
-					tile.start();
-				}
+
 			}
+		}
+		
+		private function spin():void{
+			
+			//reset counters
+			_finishedTilesCount = 0;
+			
+			//prepare play
+			var validSection:Rectangle = generatePlay();				
+			
+			if(validSection.width*validSection.height == 0){
+				_startingMoney -= _currentBet;
+				_currentSpinProfit = 0;
+			}else{
+				_currentSpinProfit = Math.floor((validSection.width/TILE_SIZE))*Math.floor((validSection.height/SIZE))*_currentBet;
+				_winMoney += _currentSpinProfit;
+				_startingMoney += _currentSpinProfit;					
+			}
+			
+			for each(var tile:Tile in _tilesDict){
+				tile.start();
+			}			
+			
+		}
+		
+		private function handleFinishedTileEvent(event:Event):void{
+			
+			_finishedTilesCount++;
+			
+			if(event.data[1] == true)
+				_coindDropSound.play();
+			
+			if(_finishedTilesCount == SIZE*SIZE){
+				startButton.enabled = true;
+				winTextField.text 			= "Win: "+_currentSpinProfit.toString();
+				startingMoneyTextField.text = "Deposit: "+_startingMoney.toString();				
+			}			
+			
+		}
+		
+		private function increaseBet():void{
+			
+			_currentBetIndex++;
+			
+			if(_currentBetIndex > _allowedBets.length-1)
+				_currentBetIndex = 0;
+			
+			_currentBet = _allowedBets[_currentBetIndex];
+			
+			betTextField.text = "Bet: "+_currentBet;
+			
 		}
 		
 		private function generatePlay():Rectangle{

@@ -32,6 +32,8 @@ package
 		
 		private const MAX_STOP_DELAY:Number = 2000;
 		
+		public static const FINISHED:String = "finishedEvent";
+		
 		public var isValid:Boolean = false;
 		
 		public function Tile(textureAtlas:TextureAtlas, name:String)
@@ -75,7 +77,7 @@ package
 			return _name;
 		}
 		
-		public function start():void{
+		public function start(callback:Function=null):void{
 			_running = true;
 			_stopTimer.delay = Math.floor(Math.random()*MAX_STOP_DELAY);
 			_stopTimer.start();
@@ -84,6 +86,7 @@ package
 		public function stop():void{
 			_running = false;
 			_stopTimer.reset();
+			dispatchEventWith(FINISHED, false, [_name, isValid]);
 		}
 		
 		private function gameLoop(event:EnterFrameEvent):void{
