@@ -14,6 +14,7 @@ package
 	import starling.events.Event;
 	import starling.textures.Texture;
 	import starling.textures.TextureAtlas;
+	import starling.utils.Color;
 	
 	public class Tile extends Sprite
 	{
@@ -48,7 +49,6 @@ package
 
 			// create movie clip
 			_movie = new MovieClip(textureAtlas.getTextures());
-			//_movie.currentFrame = 2;
 			addChild(_movie);
 			
 			// control playback
@@ -61,7 +61,7 @@ package
 			//Starling.juggler.add(_movieTween);			
 			
 			_movie.pause();
-			_movie.currentFrame = Math.abs(Math.random()*_movie.numFrames);
+			_movie.currentFrame = getRandomFrameNumer();
 			
 			_stopTimer.addEventListener(TimerEvent.TIMER, handleStopTimerEvent);
 			
@@ -77,22 +77,25 @@ package
 		
 		public function start():void{
 			_running = true;
-			_stopTimer.delay = Math.abs(Math.random()*MAX_STOP_DELAY);
+			_stopTimer.delay = Math.floor(Math.random()*MAX_STOP_DELAY);
 			_stopTimer.start();
 		}
 		
 		public function stop():void{
 			_running = false;
-			_stopTimer.reset();			
+			_stopTimer.reset();
 		}
 		
 		private function gameLoop(event:EnterFrameEvent):void{
 			
 			if(_running){
-				_movie.currentFrame = Math.abs(Math.random()*_movie.numFrames);
+				_movie.currentFrame = getRandomFrameNumer();
+				_movie.color = Color.WHITE;
 			}else{
-				if(isValid)
+				if(isValid){
 					_movie.currentFrame = _validFrameNumber;
+					_movie.color = Color.RED;
+				}
 			}
 			
 		}
@@ -102,7 +105,18 @@ package
 		}
 		
 		private function getRandomTexName():String{
-			return Math.abs(Math.random()*_movie.numFrames)+"-"+Math.abs(Math.random()*_movie.numFrames);
+			return getRandomFrameNumer()+"-"+getRandomFrameNumer();
+		}
+		
+		private function getRandomFrameNumer():Number{
+			
+			var randomFrameNumber:Number = Math.floor(Math.random()*_movie.numFrames);
+			
+			while(randomFrameNumber == _validFrameNumber){
+				randomFrameNumber = Math.floor(Math.random()*_movie.numFrames);
+			}
+			
+			return randomFrameNumber;
 		}
 		
 	}
