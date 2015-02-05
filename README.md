@@ -17,8 +17,11 @@ After each shuffle with no valid area, the bet value is deducted from the initia
 ## Frameworks
 Uses the standard Flex 3.4 SDK along with [Starling](http://gamua.com/starling/) (included sources)
 
-## IDE
-Developed using Adobe Flash Builder 4.7
+## IDE & Software
+Developed using
+* Adobe Flash Builder 4.7
+* Texture Packer
+* [Image Splitter](http://imagesplitter.net/)
 
 ## Sounds
 http://www.freesfx.co.uk/
