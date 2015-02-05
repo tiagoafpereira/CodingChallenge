@@ -254,8 +254,7 @@ package
 				
 				_currentSpinProfit 	+= _currentBet;
 				_winMoney 			+= _currentSpinProfit;
-				_startingMoney 		+= _currentSpinProfit;					
-				
+				_startingMoney 		+= _currentBet;					
 			}
 			
 			winTextField.text 			= _currentSpinProfit.toString();
@@ -264,11 +263,13 @@ package
 			if(_finishedTilesCount == SIZE*SIZE){
 				
 				//got all the tiles!
-				if(_betMultiplier > 1)
-					_currentSpinProfit *= _betMultiplier;		
-
-				winTextField.text 			= _currentSpinProfit.toString();
+				
+				_startingMoney += _currentSpinProfit * (_betMultiplier-1);
 				startingMoneyTextField.text = _startingMoney.toString();				
+				
+				if(_betMultiplier > 1)
+					_currentSpinProfit *= _betMultiplier;
+				winTextField.text = _currentSpinProfit.toString();
 				
 				//show the multiplier color
 				for each(var tile:Tile in _validTiles){
@@ -339,7 +340,7 @@ package
 			}
 			
 			//LUCKY TIME!
-			if(Math.random() > 0.85){
+			if(Math.random() > 0.75){
 				
 				if(Math.random() > 0.75){
 					
