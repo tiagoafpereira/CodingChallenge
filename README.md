@@ -1,4 +1,4 @@
-# GamesysCodingChallenge
+# CodingChallenge
 
 ## About
 This is a very simple "2D shuffle-slots" game.
@@ -30,7 +30,5 @@ http://www.freesfx.co.uk/
 [Jungle Background](http://wallpaper-share.com/wp-content/uploads/2014/06/Jungle-Road-Background-Wallpaper-HD.jpg)
 
 [Banana background](http://2.bp.blogspot.com/-jkB-AYfx_0o/U96hvZ3A-uI/AAAAAAAAQRk/WDnIIv12Q0Y/s1600/BananaDesktop.jpg)
-
-[Tiki](http://www.gamesyscorporate.com/)
 
 **Remaining images:** Original artwork by me
